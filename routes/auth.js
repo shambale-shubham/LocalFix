@@ -7,7 +7,7 @@ const User = require('../models/User');
 const router = express.Router();
 
 function signToken(user) {
-  const secret = process.env.JWT_SECRET;
+  const secret = process.env.JWT_SECRET || 'localfix-development-secret-change-before-deploy';
   if (!secret) {
     throw new Error('JWT_SECRET environment variable is not configured');
   }
