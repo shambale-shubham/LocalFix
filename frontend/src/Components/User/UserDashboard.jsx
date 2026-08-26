@@ -45,6 +45,8 @@ export default function UserDashboard() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setError("");
+      
       const [servicesRes, bookingsRes] = await Promise.all([
         apiFetch("/api/services"),
         apiFetch("/api/bookings/my", {
@@ -52,17 +54,30 @@ export default function UserDashboard() {
         }),
       ]);
 
+      console.log("Services response:", servicesRes.status, servicesRes.ok);
+      console.log("Bookings response:", bookingsRes.status, bookingsRes.ok);
+
       const servicesData = await servicesRes.json();
       const bookingsData = await bookingsRes.json();
 
-      if (servicesRes.ok && bookingsRes.ok) {
-        setServices(servicesData.services || []);
-        setBookings(bookingsData.bookings || []);
-      } else {
-        setError("Failed to load data");
+      console.log("Services data:", servicesData);
+      console.log("Bookings data:", bookingsData);
+
+      if (!servicesRes.ok) {
+        throw new Error(`Services fetch failed: ${servicesData.message || "Unknown error"}`);
       }
+
+      if (!bookingsRes.ok) {
+        throw new Error(`Bookings fetch failed: ${bookingsData.message || "Unknown error"}`);
+      }
+
+      setServices(servicesData.services || []);
+      setBookings(bookingsData.bookings || []);
     } catch (err) {
-      setError("Unable to load dashboard");
+      console.error("Dashboard error:", err);
+      setError(err.message || "Unable to load dashboard");
+      setServices([]);
+      setBookings([]);
     } finally {
       setLoading(false);
     }
