@@ -7,7 +7,11 @@ const User = require('../models/User');
 const router = express.Router();
 
 function signToken(user) {
-  return jwt.sign({ id: String(user._id || user.id), name: user.name, email: user.email, role: user.role }, process.env.JWT_SECRET, {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not configured');
+  }
+  return jwt.sign({ id: String(user._id || user.id), name: user.name, email: user.email, role: user.role }, secret, {
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
   });
 }
