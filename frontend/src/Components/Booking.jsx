@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { apiFetch } from "../lib_api";
+
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://localfix-gv9q.onrender.com";
 
 export default function Booking() {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export default function Booking() {
   });
 
   useEffect(() => {
-    apiFetch(`/api/services`)
+    fetch(`${API_URL}/api/services`)
       .then((r) => r.json())
       .then((d) => setServices(d.services || []))
       .catch(() => setServices([]));

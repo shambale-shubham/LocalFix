@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import ServiceCard from './ServiceCard';
 import { apiFetch } from '../lib_api';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://localfix-gv9q.onrender.com/api';
+
 export default function Services() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
