@@ -3,10 +3,10 @@ const configured = (import.meta.env.VITE_API_URL || "http://localhost:5001").rep
 // Try the configured port plus the ports used by earlier LocalFix builds.
 const API_CANDIDATES = [...new Set([
   configured,
-  "http://localhost:5001",
-  "http://localhost:5000",
-  "http://localhost:5002",
-  "http://localhost:5003",
+  "https://localfix-gv9q.onrender.com",
+  "https://localfix-gv9q.onrender.com/api",
+  "https://localfix-gv9q.onrender.com/api/",
+  "https://localfix-gv9q.onrender.com/",
 ])].filter(Boolean);
 
 export async function apiFetch(path, options = {}) {

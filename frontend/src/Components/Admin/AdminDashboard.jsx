@@ -1,6 +1,6 @@
 import { useEffect,useState } from 'react';
 import { Link,useNavigate } from 'react-router-dom';
-const API_URL=import.meta.env.VITE_API_URL||'http://localhost:5000';
+const API_URL=import.meta.env.VITE_API_URL||'https://localfix-gv9q.onrender.com/api';
 export default function AdminDashboard(){
  const navigate=useNavigate(),token=localStorage.getItem('token'),user=JSON.parse(localStorage.getItem('user')||'null');
  const [stats,setStats]=useState(null),[bookings,setBookings]=useState([]),[services,setServices]=useState([]),[messages,setMessages]=useState([]),[editing,setEditing]=useState(null),[form,setForm]=useState({title:'',description:'',icon:'🛠️',rating:'5.0'}),[error,setError]=useState('');

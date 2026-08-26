@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiFetch } from '../lib_api';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_URL = import.meta.env.VITE_API_URL || 'https://localfix-gv9q.onrender.com/api';
 export default function Contact() {
   const [form,setForm]=useState({name:'',email:'',phone:'',message:''});
   const [state,setState]=useState({loading:false,error:'',success:''});
