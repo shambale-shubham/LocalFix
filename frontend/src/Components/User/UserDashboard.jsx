@@ -23,6 +23,52 @@ const getServiceIcon = (service = "") => {
   return "🛠️";
 };
 
+// Mock data for fallback
+const MOCK_SERVICES = [
+  { 
+    id: 1, 
+    title: "Plumbing Services", 
+    price: "499", 
+    duration: "2 hrs", 
+    description: "Expert plumbing solutions for all your needs. Pipe repair, installation, and maintenance." 
+  },
+  { 
+    id: 2, 
+    title: "Electrical Services", 
+    price: "399", 
+    duration: "1.5 hrs", 
+    description: "Professional electrical work including wiring, installation, and repairs." 
+  },
+  { 
+    id: 3, 
+    title: "Painting Services", 
+    price: "599", 
+    duration: "3 hrs", 
+    description: "Interior and exterior painting with premium quality materials." 
+  },
+  { 
+    id: 4, 
+    title: "Cleaning Services", 
+    price: "299", 
+    duration: "2 hrs", 
+    description: "Complete home and office cleaning with eco-friendly products." 
+  },
+  { 
+    id: 5, 
+    title: "Carpenter Services", 
+    price: "449", 
+    duration: "2.5 hrs", 
+    description: "Custom furniture, repairs, and installation services." 
+  },
+  { 
+    id: 6, 
+    title: "AC Repair Services", 
+    price: "699", 
+    duration: "1.5 hrs", 
+    description: "Expert AC repair, maintenance, and installation services." 
+  },
+];
+
 export default function UserDashboard() {
   const navigate = useNavigate();
   
@@ -30,6 +76,7 @@ export default function UserDashboard() {
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [usingMockData, setUsingMockData] = useState(false);
 
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -46,7 +93,9 @@ export default function UserDashboard() {
     try {
       setLoading(true);
       setError("");
+      setUsingMockData(false);
       
+      // Fetch services and bookings in parallel
       const [servicesRes, bookingsRes] = await Promise.all([
         apiFetch("/api/services"),
         apiFetch("/api/bookings/my", {
@@ -54,29 +103,108 @@ export default function UserDashboard() {
         }),
       ]);
 
-      console.log("Services response:", servicesRes.status, servicesRes.ok);
-      console.log("Bookings response:", bookingsRes.status, bookingsRes.ok);
+      console.log("Services response:", {
+        status: servicesRes.status,
+        ok: servicesRes.ok,
+        statusText: servicesRes.statusText
+      });
+      console.log("Bookings response:", {
+        status: bookingsRes.status,
+        ok: bookingsRes.ok,
+        statusText: bookingsRes.statusText
+      });
 
-      const servicesData = await servicesRes.json();
-      const bookingsData = await bookingsRes.json();
-
-      console.log("Services data:", servicesData);
-      console.log("Bookings data:", bookingsData);
-
-      if (!servicesRes.ok) {
-        throw new Error(`Services fetch failed: ${servicesData.message || "Unknown error"}`);
+      // Handle services response
+      let servicesData = null;
+      let servicesArray = [];
+      
+      try {
+        const servicesText = await servicesRes.text();
+        console.log("Services raw response:", servicesText);
+        
+        if (servicesText) {
+          servicesData = JSON.parse(servicesText);
+          console.log("Services parsed data:", servicesData);
+          console.log("Services data keys:", Object.keys(servicesData));
+        }
+      } catch (e) {
+        console.error("Error parsing services response:", e);
       }
 
-      if (!bookingsRes.ok) {
-        throw new Error(`Bookings fetch failed: ${bookingsData.message || "Unknown error"}`);
+      // Handle bookings response
+      let bookingsData = null;
+      let bookingsArray = [];
+      
+      try {
+        const bookingsText = await bookingsRes.text();
+        console.log("Bookings raw response:", bookingsText);
+        
+        if (bookingsText) {
+          bookingsData = JSON.parse(bookingsText);
+          console.log("Bookings parsed data:", bookingsData);
+          console.log("Bookings data keys:", Object.keys(bookingsData));
+        }
+      } catch (e) {
+        console.error("Error parsing bookings response:", e);
       }
 
-      setServices(servicesData.services || []);
-      setBookings(bookingsData.bookings || []);
+      // Try to extract services from various possible data structures
+      if (servicesData) {
+        servicesArray = servicesData.services || 
+                       servicesData.data || 
+                       servicesData.items || 
+                       servicesData.result ||
+                       servicesData;
+        
+        if (!Array.isArray(servicesArray) && typeof servicesArray === 'object') {
+          servicesArray = Object.values(servicesArray).filter(item => 
+            typeof item === 'object' && item !== null
+          );
+        }
+      }
+
+      // Try to extract bookings from various possible data structures
+      if (bookingsData) {
+        bookingsArray = bookingsData.bookings || 
+                       bookingsData.data || 
+                       bookingsData.items || 
+                       bookingsData.result ||
+                       bookingsData;
+        
+        if (!Array.isArray(bookingsArray) && typeof bookingsArray === 'object') {
+          bookingsArray = Object.values(bookingsArray).filter(item => 
+            typeof item === 'object' && item !== null
+          );
+        }
+      }
+
+      // Validate and set services
+      if (Array.isArray(servicesArray) && servicesArray.length > 0) {
+        setServices(servicesArray);
+        console.log(`✅ Loaded ${servicesArray.length} services from API`);
+      } else {
+        console.warn("⚠️ No services found from API, using mock data");
+        setServices(MOCK_SERVICES);
+        setUsingMockData(true);
+        setError("Using sample services data. Backend API may not be available.");
+      }
+
+      // Validate and set bookings
+      if (Array.isArray(bookingsArray) && bookingsArray.length > 0) {
+        setBookings(bookingsArray);
+        console.log(`✅ Loaded ${bookingsArray.length} bookings from API`);
+      } else {
+        console.log("ℹ️ No bookings found");
+        setBookings([]);
+      }
+
     } catch (err) {
       console.error("Dashboard error:", err);
-      setError(err.message || "Unable to load dashboard");
-      setServices([]);
+      setError(`Unable to load dashboard: ${err.message}`);
+      
+      // Use mock data as fallback
+      setServices(MOCK_SERVICES);
+      setUsingMockData(true);
       setBookings([]);
     } finally {
       setLoading(false);
@@ -122,8 +250,22 @@ export default function UserDashboard() {
       <main className="max-w-6xl mx-auto px-4 py-6">
         {/* Error Message */}
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg">
+          <div className={`mb-4 ${usingMockData ? 'bg-yellow-50 border-yellow-200 text-yellow-600' : 'bg-red-50 border-red-200 text-red-600'} border p-3 rounded-lg`}>
+            {usingMockData && (
+              <div className="flex items-center gap-2 mb-1">
+                <span>ℹ️</span>
+                <span className="font-semibold">Using Sample Data</span>
+              </div>
+            )}
             {error}
+            {usingMockData && (
+              <button 
+                onClick={loadData}
+                className="mt-2 text-sm underline hover:no-underline"
+              >
+                Retry connecting to backend →
+              </button>
+            )}
           </div>
         )}
 
@@ -180,7 +322,7 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        {/* Booking Status Summary - NEW */}
+        {/* Booking Status Summary */}
         {totalBookings > 0 && (
           <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
             <h2 className="text-lg font-bold mb-4">Booking Status Overview</h2>
@@ -280,44 +422,54 @@ export default function UserDashboard() {
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-gray-500">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+              <p>Loading services...</p>
+            </div>
           ) : services.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <div className="text-4xl mb-2">🛠️</div>
               <p>No services available</p>
+              <p className="text-sm mt-1">Please check back later</p>
+              <button 
+                onClick={loadData}
+                className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Refresh Services
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {services.map((service) => (
                 <div
-                  key={service.id}
+                  key={service.id || service._id || Math.random()}
                   className="border rounded-xl p-4 hover:shadow-md transition group"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl group-hover:scale-110 transition">
-                      {getServiceIcon(service.title)}
+                      {getServiceIcon(service.title || service.name || "")}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-bold text-sm">{service.title}</h3>
-                      {service.price && (
-                        <p className="text-sm font-semibold text-blue-600">₹{service.price}</p>
+                      <h3 className="font-bold text-sm">{service.title || service.name || "Service"}</h3>
+                      {(service.price || service.cost) && (
+                        <p className="text-sm font-semibold text-blue-600">₹{service.price || service.cost}</p>
                       )}
-                      {service.duration && (
-                        <p className="text-xs text-gray-400">⏱️ {service.duration}</p>
+                      {(service.duration || service.estimatedTime) && (
+                        <p className="text-xs text-gray-400">⏱️ {service.duration || service.estimatedTime}</p>
                       )}
                     </div>
                   </div>
                   <p className="text-sm text-gray-500 mb-3 line-clamp-2">
-                    {service.description || "Professional service"}
+                    {service.description || service.desc || "Professional service"}
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
                       <span className="text-xs text-yellow-500">⭐</span>
-                      <span className="text-xs text-gray-600">4.8</span>
-                      <span className="text-xs text-gray-400">(120+ reviews)</span>
+                      <span className="text-xs text-gray-600">{service.rating || "4.8"}</span>
+                      <span className="text-xs text-gray-400">({service.reviewCount || "120+"} reviews)</span>
                     </div>
                     <Link
-                      to={`/booking?service=${encodeURIComponent(service.title)}`}
+                      to={`/booking?service=${encodeURIComponent(service.title || service.name || "")}`}
                       className="text-sm bg-blue-600 text-white px-4 py-1.5 rounded-lg font-semibold hover:bg-blue-700 transition"
                     >
                       Book Now
@@ -346,42 +498,53 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {bookings.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
+              <p>Loading bookings...</p>
+            </div>
+          ) : bookings.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <div className="text-4xl mb-2">📅</div>
               <p>No bookings yet</p>
               <p className="text-sm mt-1">Book your first service today!</p>
+              <Link 
+                to="/booking"
+                className="inline-block mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+              >
+                Book a Service
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">
               {bookings.slice(0, 5).map((booking) => (
                 <div
-                  key={booking.id}
+                  key={booking.id || booking._id || Math.random()}
                   className="border rounded-xl p-4 hover:shadow-md transition group"
                 >
                   <div className="flex flex-col sm:flex-row justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">
-                          {getServiceIcon(booking.service)} {booking.service}
+                          {getServiceIcon(booking.service || booking.serviceName || "")} {booking.service || booking.serviceName || "Service"}
                         </h3>
                         <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
-                          #{booking.id?.slice(0, 6) || "N/A"}
+                          #{booking.id?.slice(0, 6) || booking._id?.slice(0, 6) || "N/A"}
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        📅 {booking.createdAt
-                          ? new Date(booking.createdAt).toLocaleString()
+                        📅 {booking.createdAt || booking.date
+                          ? new Date(booking.createdAt || booking.date).toLocaleString()
                           : "Date unavailable"}
                       </p>
-                      {booking.address && (
+                      {(booking.address || booking.location) && (
                         <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                          📍 {booking.address}
+                          📍 {booking.address || booking.location}
                         </p>
                       )}
-                      {booking.provider && (
+                      {(booking.provider || booking.providerName) && (
                         <p className="text-xs text-gray-400 mt-1">
-                          👤 Provider: {booking.provider}
+                          👤 Provider: {booking.provider || booking.providerName}
                         </p>
                       )}
                     </div>
@@ -395,7 +558,7 @@ export default function UserDashboard() {
                       </span>
                       {booking.status === "Completed" && (
                         <Link 
-                          to={`/review/${booking.id}`}
+                          to={`/review/${booking.id || booking._id}`}
                           className="text-xs text-blue-600 hover:underline"
                         >
                           Leave a review ✍️
@@ -417,8 +580,6 @@ export default function UserDashboard() {
           )}
         </div>
 
-     
-
         {/* Support with More Info */}
         <div className="bg-gray-800 text-white rounded-xl p-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -435,10 +596,8 @@ export default function UserDashboard() {
               >
                 📧 Contact Support
               </Link>
-            
             </div>
           </div>
-          
         </div>
       </main>
     </div>
