@@ -8,7 +8,4 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
-  define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://localfix-gv9q.onrender.com'),
-  },
 })
