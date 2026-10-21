@@ -9,7 +9,11 @@ function verifyToken(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Keep this fallback in sync with routes/auth.js. Without it, login can
+    // issue a token successfully while every protected endpoint rejects it
+    // when JWT_SECRET has not been configured yet.
+    const secret = process.env.JWT_SECRET || 'localfix-development-secret-change-before-deploy';
+    const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
   } catch (err) {
