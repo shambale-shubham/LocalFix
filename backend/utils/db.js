@@ -5,7 +5,7 @@ let connectionPromise = null;
 async function connectDB() {
   if (mongoose.connection.readyState === 1) return mongoose.connection;
   if (!connectionPromise) {
-    const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/localfix';
+    const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/';
     connectionPromise = mongoose.connect(uri, {
       serverSelectionTimeoutMS: 5000,
     }).then(() => {
